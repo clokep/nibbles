@@ -17,6 +17,8 @@ class SomePacket(struct.Struct):
     msg = fields.CString()
     color = fields.UnsignedByte(mapping={0: 'NONE', 1: 'BLUE', 2: 'RED'})
     str = fields.PString()
+    version = fields.windows.OSVERSIONINFOEX()
+    bytes = fields.Byte(length=length)
 
     def post_consume(self):
         # Do something with the fields here...maybe decompression?
@@ -34,6 +36,7 @@ p.color # prints 'BLUE'
 p.str # prints 'AB'
 p.length # prints 10
 p.meta.consumed_bytes # prints 10
+p.version.build_id # prints 2600
 
 data = (
     '\x0A' # length
@@ -44,3 +47,21 @@ data = (
 
 p = SomePacket(data) # raises an exception!
 ```
+
+Similar Stuff
+-------------
+
+[scapy](http://secdev.org/projects/scapy/)
+* Still requires manually writing parser methods.
+* Difficult to inherit parsing.
+
+[construct](http://construct.readthedocs.org/en/latest/) / [construct3](http://tomerfiliba.com/blog/Survey-of-Construct3/)
+* Still requires manually writing parser methods.
+* Difficult to inherit parsing.
+
+[protlib](http://courtwright.org/protlib/):
+* Doesn't support bit fields, choice fields, Pascal-strings
+* Has a globally growing list of `CType` objects
+* Interaction with Twisted? (Via warning module.)
+* Odd choices of what to consider exception vs. warning.
+* Endianess is global?
