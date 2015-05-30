@@ -36,7 +36,7 @@ class SubField(Field):
     r = Reversed()
 
 
-class Test1(TestCase):
+class TestOrdering(TestCase):
     def test_ordered_fields(self):
         f = Ordered()
         self.assertEqual(['a', 'b', 'c', 'd'], f.declared_fields.keys())

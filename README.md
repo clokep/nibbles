@@ -48,6 +48,11 @@ data = (
 p = SomePacket(data) # raises an exception!
 ```
 
+Supported Features
+------------------
+
+* Variable length strings
+
 Similar Stuff
 -------------
 
@@ -65,3 +70,4 @@ Similar Stuff
 * Interaction with Twisted? (Via warning module.)
 * Odd choices of what to consider exception vs. warning.
 * Endianess is global?
+* (Super easy to add, but...) doesn't have nice types like `DWORD`, etc.
