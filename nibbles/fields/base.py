@@ -48,15 +48,14 @@ class BaseField(object):
         # Increase the creation counter, and save our local copy.
         self.creation_counter = Field.creation_counter
         BaseField.creation_counter += 1
-        
-        # Add the fields to this instance of the class.
-        #for fieldname, field in self.base_fields.items():
-        #    setattr(self, fieldname, field)
 
         # Ensure the class knows what Endianess to care about.
         if endian not in ENDIANS:
             raise ValueError("Invalid value for endianess: %s" % endian)
         self.endian = endian
+
+        for fieldname, value in kwargs.items():
+            setattr(self, fieldname, value)
 
     # The descriptor is set up to allow each instance to have it's own value,
     # even when belonging to different classes. See the tests near
@@ -93,11 +92,13 @@ class BaseField(object):
 
     # The number of bytes represented by this field, -1 denotes a variable
     # length.
-    def size(self):
+    def size(self, value=None):
         sz = 0
         # Combine the length of any children.
-        for fieldname in self.base_fields.keys():
-            sz += getattr(self, fieldname).size
+        for fieldname, field in self.base_fields.items():
+            # Get the value and then ask the field the size.
+            val = getattr(self, fieldname)
+            sz += field.size(val)
 
         return sz
 
@@ -115,15 +116,30 @@ class BaseField(object):
             # underlying Python value. Use the shared instance that is in
             # base_fields directly.
             raw = field.consume(data)
-            # Setting the attribute will set the raw Python value to be stored,
-            # however.
+            # Call the descriptor's __set__.
             setattr(self, fieldname, raw)
 
         return self
 
-    def emit(self):
-        """Returns the serialization of this data to a string."""
-        pass
+    def emit(self, value=None):
+        """
+        Returns the serialization of this data to a string. This is a little
+        odd, that you have to pass the value into itself.
+
+        TODO Optionally accept a filelike to write to.
+        """
+
+        if value is None:
+            value = self
+
+        # Ask each field to consume bytes and add it as a property (in order).
+        res = b''
+        for fieldname, field in self.base_fields.items():
+            # Get the value and then ask the field to emit it.
+            val = getattr(self, fieldname)
+            res += field.emit(val)
+
+        return res
 
 
 class MetaField(type):

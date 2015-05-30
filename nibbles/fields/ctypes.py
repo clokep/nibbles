@@ -14,8 +14,8 @@ class StructField(Field):
     # True.
     format_string = b''
 
-    @property
-    def size(self):
+    def size(self, value=None):
+        # value is unused.
         return struct.calcsize(self.format_string)
 
     def consume(self, f):
@@ -25,13 +25,14 @@ class StructField(Field):
         format_string = self.endian + self.format_string
 
         # Calculate the number of necessary bytes.
-        num_bytes = self.size
+        num_bytes = self.size()
 
         # Unpack the data.
         return struct.unpack(format_string, f.read(num_bytes))[0]
 
-    def emit(self):
-        return struct.pack(self.endian + self.format_string, self)
+    def emit(self, value):
+        format_string = self.endian + self.format_string
+        return struct.pack(format_string, value)
 
 
 class UIntField(StructField):
@@ -42,6 +43,9 @@ class ByteField(StructField):
 
 
 class CString(Field):
+    def size(self, value=''):
+        return len(value) + 1
+
     def consume(self, f):
         f = _filelike(f)
 
@@ -55,3 +59,6 @@ class CString(Field):
         self = raw
 
         return self
+
+    def emit(self, value):
+        return value + '\x00'
