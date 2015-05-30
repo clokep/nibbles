@@ -1,18 +1,20 @@
 from nibbles import fields
 from nibbles.fields import LITTLE_ENDIAN
 
+EXPECTED = '\x01abcdf\x00'
+
 class Struct(fields.Field):
     code = fields.ByteField()
     description = fields.CString()
 
 s = Struct(code=1, description='abcdf', endian=LITTLE_ENDIAN)
-result = s.emit() # '\x01abcdf\x00'
+assert s.emit() == EXPECTED
 
-EXPECTED = '\x01abcdf\x00'
-s = Struct.consume(EXPECTED, endian=LITTLE_ENDIAN)
-s.code # 1
-s.description # 'abcdf'
-s.emit() # '\x01abcdf\x00'
+s = Struct().consume(EXPECTED)
+assert s.code() == 1
+assert s.description() == 'abcdf'
+assert s.emit() == EXPECTED
+assert s.size() == -1
 
 
 class ComplexStruct(fields.Field):

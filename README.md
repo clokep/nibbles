@@ -71,3 +71,9 @@ Similar Stuff
 * Odd choices of what to consider exception vs. warning.
 * Endianess is global?
 * (Super easy to add, but...) doesn't have nice types like `DWORD`, etc.
+
+
+TODO
+====
+
+* Setup Sphinx...

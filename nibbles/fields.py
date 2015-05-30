@@ -43,6 +43,9 @@ class BaseField(object):
     # Tracks each time a Field instance is created. Used to retain order.
     creation_counter = 0
 
+    # The endianess of this data.
+    endian = NETWORK_ENDIAN
+
     def __init__(self, endian=NETWORK_ENDIAN, *args, **kwargs):
         """
         Foobar.
@@ -55,8 +58,8 @@ class BaseField(object):
         
         # Add the fields to this instance of the class, deepcopy to allow
         # modification of instances.
-        for f, v in self.base_fields.items():
-            setattr(self, f, deepcopy(v))
+        for fieldname, field in self.base_fields.items():
+            setattr(self, fieldname, deepcopy(field))
 
         # Ensure the class knows what Endianess to care about.
         if endian not in ENDIANS:
@@ -65,28 +68,35 @@ class BaseField(object):
 
     # The raw Python object value for this field. Individual subclasses should
     # set this value.
-    _raw = None
+    value = None
+    def __call__(self):
+        return self.value
 
     # The number of bytes represented by this field, -1 denotes a variable
     # length.
     def size(self):
         sz = 0
         # Combine the length of any children.
-        for f in self.base_fields.keys():
-            sz += getattr(self, f).size
+        for fieldname in self.base_fields.keys():
+            sz += getattr(self, fieldname).size
 
         return sz
 
-    @classmethod
-    def consume(cls, data):
+    def consume(self, data):
         """
         A factory method, it takes data and returns an instance of this Field
         object.
 
         """
-        return cls(self.fobar)
+        data = _filelike(data)
 
-    def emit(self, filelike):
+        # Ask each field to consume bytes and add it as a property (in order).
+        for fieldname in self.base_fields.keys():
+            getattr(self, fieldname).consume(data)
+
+        return self
+
+    def emit(self):
         """Returns the serialization of this data to a string."""
         pass
 
@@ -141,51 +151,46 @@ class StructField(Field):
 
     # The formatting to use for struct unpack/pack, only used if fixed_width is
     # True.
-    @property
-    def format_string(self):
-        # Combine the formats of any children.
-        fmt = ''
-        for f in self.base_fields.keys():
-            fmt += getattr(self, f).format_string
-
-        return fmt
+    format_string = b''
 
     @property
     def size(self):
-        return struct.calcsize(self.struct_format)
+        return struct.calcsize(self.format_string)
 
-    @classmethod
-    def consume(cls, f, *args, **kwargs):
+    def consume(self, f):
         f = _filelike(f)
 
-        endian = kwargs.get('endian', NETWORK_ENDIAN)
+        # Add the Endianess to the format string.
+        format_string = self.endian + self.format_string
 
-        values = struct.unpack(endian + cls.struct_format,
-                               f.read(cls.length))
-        args = list(values) + args
+        # Calculate the number of necessary bytes.
+        num_bytes = self.size
 
-        return cls(*args, **kwargs)
+        # Unpack the data.
+        self.value = struct.unpack(format_string, f.read(num_bytes))[0]
 
-    def emit(self, value):
-        return struct.pack(self.endian + self.struct_format, self)
+        return self
+
+    def emit(self):
+        return struct.pack(self.endian + self.format_string, self)
 
 
-class UIntField(FixedWidthField):
+class UIntField(StructField):
     format_string = b'I'
 
-class ByteField(FixedWidthField):
+class ByteField(StructField):
     format_string = b'b'
 
 
 class CString(Field):
-    @classmethod
-    def consume(cls, f, *args, **kwargs):
+    def consume(self, f):
         f = _filelike(f)
 
-        res = b''
+        self.value = b''
         char = f.read(1)
+        # Read until a null-byte is hit.
         while char != '\x00':
-            res += char
+            self.value += char
             char = f.read(1)
 
-        return cls(res, *args, **kwargs)
+        return self
