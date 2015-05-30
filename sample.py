@@ -1,19 +1,3 @@
-class Prop(object):
-    def __get__(self, obj, bas):
-        print(self, obj, bas)
-        return "XXX"
-
-
-class Foo(object):
-    p = Prop()
-
-f = Foo()
-print(Foo.p)
-print(f.p)
-
-exit(0)
-
-
 from nibbles import fields
 from nibbles.fields import LITTLE_ENDIAN
 
@@ -27,10 +11,8 @@ s = Struct(code=1, description='abcdf', endian=LITTLE_ENDIAN)
 #assert s.emit() == EXPECTED
 
 s = Struct().consume(EXPECTED)
-print(Struct.code)
-print(s.code)
 assert s.code == 1
-assert s.description() == 'abcdf'
+assert s.description == 'abcdf'
 assert s.emit() == EXPECTED
 assert s.size() == -1
 

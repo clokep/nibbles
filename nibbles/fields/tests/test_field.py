@@ -11,6 +11,7 @@ class CompoundField(Field):
 
 
 class RaisingField(Field):
+    """A Field that raises when the descriptor is called."""
     class GetException(Exception):
         def __init__(self, *args, **kwargs):
             self.args = args
@@ -58,3 +59,26 @@ class TestCompoundField(TestCase):
         f.b = {}
         self.assertFalse(f.a is f2.a)
         self.assertFalse(f.b is f2.b)
+
+    def test_field_instances(self):
+        """Ensure fields are not shared."""
+        f = CompoundField()
+        f2 = CompoundField()
+
+        f.foo = 1
+        self.assertRaises(AttributeError, lambda: f2.foo)
+        self.assertEqual(f.foo, 1)
+
+
+class TestComplexField(TestCase):
+    def test_complex(self):
+        """Ensure subfields of subfields can be reached."""
+        class CompoundCompoundField(CompoundField):
+            c = CompoundField()
+            f = Field()
+
+        c = CompoundCompoundField()
+        self.assertIsInstance(c, CompoundCompoundField)
+        self.assertIsInstance(c.c, CompoundField)
+        self.assertIs(c.c.a, None)
+        self.assertIs(c.f, None)

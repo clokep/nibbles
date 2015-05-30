@@ -1,6 +1,4 @@
 from collections import OrderedDict
-from copy import deepcopy
-import struct
 
 try:
     from cStringIO import StringIO
@@ -51,10 +49,9 @@ class BaseField(object):
         self.creation_counter = Field.creation_counter
         BaseField.creation_counter += 1
         
-        # Add the fields to this instance of the class, deepcopy to allow
-        # modification of instances.
-        for fieldname, field in self.base_fields.items():
-            setattr(self, fieldname, deepcopy(field))
+        # Add the fields to this instance of the class.
+        #for fieldname, field in self.base_fields.items():
+        #    setattr(self, fieldname, field)
 
         # Ensure the class knows what Endianess to care about.
         if endian not in ENDIANS:
@@ -77,9 +74,13 @@ class BaseField(object):
         if not instance:
             return self
 
+        # If there are any sub-fields, pass the real field back.
+        if self.base_fields:
+            return self
+
         key = self._gen_key(instance)
         if not self._raws.has_key(key):
-            raise AttributeError
+            self.__set__(instance, None)
 
         return self._raws[key]
 
@@ -109,8 +110,14 @@ class BaseField(object):
         data = _filelike(data)
 
         # Ask each field to consume bytes and add it as a property (in order).
-        for fieldname in self.base_fields.keys():
-            getattr(self, fieldname).consume(data)
+        for fieldname, field in self.base_fields.items():
+            # Don't get *this* instances field, since it will lie and return the
+            # underlying Python value. Use the shared instance that is in
+            # base_fields directly.
+            raw = field.consume(data)
+            # Setting the attribute will set the raw Python value to be stored,
+            # however.
+            setattr(self, fieldname, raw)
 
         return self
 
@@ -130,14 +137,11 @@ class MetaField(type):
         for key, value in attrs.items():
             if isinstance(value, BaseField):
                 current_fields.append((key, value))
-                attrs[key] = deepcopy(value)
-                #attrs.pop(key)
         current_fields.sort(key=lambda x: x[1].creation_counter)
         attrs['declared_fields'] = OrderedDict(current_fields)
 
         new_class = (super(MetaField, mcs)
             .__new__(mcs, name, bases, attrs))
-        #print(new_class, mcs, name, bases, attrs)
 
         # Walk through the MRO.
         declared_fields = OrderedDict()

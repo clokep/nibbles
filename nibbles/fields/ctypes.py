@@ -1,4 +1,6 @@
-from .base import Field
+import struct
+
+from .base import Field, _filelike
 
 class StructField(Field):
     """
@@ -26,9 +28,7 @@ class StructField(Field):
         num_bytes = self.size
 
         # Unpack the data.
-        self._raw = struct.unpack(format_string, f.read(num_bytes))[0]
-
-        return self
+        return struct.unpack(format_string, f.read(num_bytes))[0]
 
     def emit(self):
         return struct.pack(self.endian + self.format_string, self)
@@ -45,11 +45,13 @@ class CString(Field):
     def consume(self, f):
         f = _filelike(f)
 
-        self._raw = b''
-        char = f.read(1)
+        raw = b''
         # Read until a null-byte is hit.
+        char = f.read(1)
         while char != '\x00':
-            self._raw += char
+            raw += char
             char = f.read(1)
+
+        self = raw
 
         return self
