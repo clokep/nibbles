@@ -47,11 +47,6 @@ class BaseField(object):
     endian = NETWORK_ENDIAN
 
     def __init__(self, endian=NETWORK_ENDIAN, *args, **kwargs):
-        """
-        Foobar.
-
-        """
-
         # Increase the creation counter, and save our local copy.
         self.creation_counter = Field.creation_counter
         BaseField.creation_counter += 1
@@ -66,11 +61,34 @@ class BaseField(object):
             raise ValueError("Invalid value for endianess: %s" % endian)
         self.endian = endian
 
-    # The raw Python object value for this field. Individual subclasses should
-    # set this value.
-    value = None
-    def __call__(self):
-        return self.value
+    # The descriptor is set up to allow each instance to have it's own value,
+    # even when belonging to different classes. See the tests near
+    # nibbles.fields.test_field.TestCompoundField.test_separate_fields.
+    _raws = {}
+    def _gen_key(self, instance):
+        """
+        The key is based on both self (i.e. the instance of the descriptor) and
+        instance (i.e. the object that is accessing the descriptor.
+        """
+        return (id(self), id(instance))
+
+    def __get__(self, instance, owner):
+        # If there is no instance, then we must be called from a class obejct.
+        if not instance:
+            return self
+
+        key = self._gen_key(instance)
+        if not self._raws.has_key(key):
+            raise AttributeError
+
+        return self._raws[key]
+
+    def __set__(self, instance, value):
+        """Sub-classes might want to do validation."""
+        self._raws[self._gen_key(instance)] = value
+
+    def __delete__(self, instance):
+        del self._raws[self._gen_key(instance)]
 
     # The number of bytes represented by this field, -1 denotes a variable
     # length.
@@ -109,15 +127,17 @@ class MetaField(type):
     def __new__(mcs, name, bases, attrs):
         # Collect fields from current class.
         current_fields = []
-        for key, value in list(attrs.items()):
+        for key, value in attrs.items():
             if isinstance(value, BaseField):
                 current_fields.append((key, value))
-                attrs.pop(key)
+                attrs[key] = deepcopy(value)
+                #attrs.pop(key)
         current_fields.sort(key=lambda x: x[1].creation_counter)
         attrs['declared_fields'] = OrderedDict(current_fields)
 
         new_class = (super(MetaField, mcs)
             .__new__(mcs, name, bases, attrs))
+        #print(new_class, mcs, name, bases, attrs)
 
         # Walk through the MRO.
         declared_fields = OrderedDict()
@@ -139,58 +159,3 @@ class MetaField(type):
 
 class Field(BaseField):
     __metaclass__ = MetaField
-
-
-class StructField(Field):
-    """
-    A field that can be directly unpacked with a format string.
-
-    Sub-classes should declare the `format_string` property.
-
-    """
-
-    # The formatting to use for struct unpack/pack, only used if fixed_width is
-    # True.
-    format_string = b''
-
-    @property
-    def size(self):
-        return struct.calcsize(self.format_string)
-
-    def consume(self, f):
-        f = _filelike(f)
-
-        # Add the Endianess to the format string.
-        format_string = self.endian + self.format_string
-
-        # Calculate the number of necessary bytes.
-        num_bytes = self.size
-
-        # Unpack the data.
-        self.value = struct.unpack(format_string, f.read(num_bytes))[0]
-
-        return self
-
-    def emit(self):
-        return struct.pack(self.endian + self.format_string, self)
-
-
-class UIntField(StructField):
-    format_string = b'I'
-
-class ByteField(StructField):
-    format_string = b'b'
-
-
-class CString(Field):
-    def consume(self, f):
-        f = _filelike(f)
-
-        self.value = b''
-        char = f.read(1)
-        # Read until a null-byte is hit.
-        while char != '\x00':
-            self.value += char
-            char = f.read(1)
-
-        return self

@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from unittest import TestCase
 
-from ..fields import Field
+from ..base import Field
 
 # A bunch of classes for testing.
 class Ordered(Field):
