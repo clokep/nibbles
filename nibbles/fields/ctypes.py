@@ -3,6 +3,7 @@ import struct
 from nibbles.exceptions import NotEnoughDataException
 from nibbles.fields.base import Field, _filelike
 
+
 class StructField(Field):
     """
     A field that can be directly unpacked with a format string.
@@ -41,56 +42,74 @@ class StructField(Field):
 class PadField(StructField):
     format_string = b'x'
 
+
 class CharField(StructField):
     format_string = b'c'
+
 
 class ByteField(StructField):
     format_string = b'b'
 
+
 class UnsignedByteField(StructField):
     format_string = b'B'
+
 
 class BoolField(StructField):
     format_string = b'?'
 
+
 class ShortField(StructField):
     format_string = b'h'
+
 
 class UnsignedShortField(StructField):
     format_string = b'H'
 
+
 class IntegerField(StructField):
     format_string = b'i'
+
 
 class UnsignedIntegerField(StructField):
     format_string = b'I'
 
+
 class LongField(StructField):
     format_string = b'l'
+
 
 class UnsignedLongField(StructField):
     format_string = b'L'
 
+
 class LongLongField(StructField):
     format_string = b'q'
+
 
 class UnsignedLongLongField(StructField):
     format_string = b'Q'
 
+
 class FloatField(StructField):
     format_string = b'f'
+
 
 class DoubleField(StructField):
     format_string = b'd'
 
+
 class StringField(StructField):
     format_string = b's'
+
 
 class PStringField(StructField):
     format_string = b'p'
 
+
 class VoidField(StructField):
     format_string = b'P'
+
 
 class CStringField(Field):
     def __init__(self, value=b'', *args, **kwargs):

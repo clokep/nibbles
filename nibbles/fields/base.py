@@ -56,10 +56,10 @@ class BaseField(object):
 
         # Now set those values, if in kwargs.
         for fieldname, value in kwargs.items():
-           if fieldname in self.base_fields:
+            if fieldname in self.base_fields:
                 getattr(self, fieldname).set_value(value)
-           else:
-               raise TypeError
+            else:
+                raise TypeError
 
     # The number of bytes represented by this field, -1 denotes a variable
     # length.

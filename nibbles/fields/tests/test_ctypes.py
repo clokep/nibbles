@@ -3,6 +3,7 @@ from unittest import TestCase
 from nibbles.exceptions import NotEnoughDataException
 from nibbles.fields.ctypes import *
 
+
 class TestCString(TestCase):
     def setUp(self):
         self.f = CStringField()
@@ -40,6 +41,6 @@ class TestCString(TestCase):
         self.assertEqual(self.f(), b'test')
         self.assertEqual(self.f.size(), 5)
         self.assertEqual(self.f.emit(), b'test\x00')
-    
+
     def test_unicode(self):
         self.assertRaises(ValueError, CStringField, u'test')
