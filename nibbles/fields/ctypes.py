@@ -8,14 +8,36 @@ class StructField(Field):
     """
     A field that can be directly unpacked with a format string.
 
-    Sub-classes should declare the `format_string` property.
-
+    Sub-classes should declare the following properties:
+        format_string
+        default
+        valid_types
     """
+
+    def __init__(self, value=None, *args, **kwargs):
+        super(StructField, self).__init__(*args, **kwargs)
+
+        if value is None:
+            value = self.default
+
+        if not isinstance(value, self.valid_types):
+            raise ValueError("Value is not a valid type: %s" % type(value))
+        self._value = value
 
     # The formatting to use for struct unpack/pack, only used if fixed_width is
     # True.
     @property
     def format_string(self):
+        raise NotImplementedError
+
+    # The default value used in the constructor.
+    @property
+    def default(self):
+        raise NotImplementedError
+
+    # A tuple of valid types for value.
+    @property
+    def valid_types(self):
         raise NotImplementedError
 
     def size(self):
@@ -32,7 +54,7 @@ class StructField(Field):
         num_bytes = self.size()
 
         # Unpack the data.
-        self._value = struct.unpack_from(format_string, f)[0]
+        self._value = struct.unpack(format_string, f.read(num_bytes))[0]
 
     def emit(self):
         format_string = self.endian + self.format_string
@@ -103,10 +125,6 @@ class StringField(StructField):
     format_string = b's'
 
 
-class PStringField(StructField):
-    format_string = b'p'
-
-
 class VoidField(StructField):
     format_string = b'P'
 
@@ -139,3 +157,30 @@ class CStringField(Field):
 
     def emit(self):
         return self._value + b'\x00'
+
+
+class PStringField(CStringField):
+    """The built in struct unpacking of Pascal strings is unfortunate, build our
+    own."""
+
+    def consume(self, f):
+        f = _filelike(f)
+
+        # The length is the first byte
+        length = f.read(1)
+        if length == '':
+            raise NotEnoughDataException("0-length string is invalid P-string")
+        length = ord(length)
+
+        # Attempt to read that length.
+        self._value = f.read(length)
+
+        if len(self._value) < length:
+            raise NotEnoughDataException(
+                "Not enough data for P-string, expected: %d, got: %d" %
+                (length, len(self._value)))
+
+    def emit(self):
+        # Remember the size is total number of bytes, but P-strings just include
+        # the number of bytes *after* the length byte.
+        return chr(self.size() - 1) + self._value
