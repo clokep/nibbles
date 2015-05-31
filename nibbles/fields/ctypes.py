@@ -82,7 +82,7 @@ class ByteField(StructField):
     def __init__(self, value=0, *args, **kwargs):
         super(StructField, self).__init__(*args, **kwargs)
 
-        if not isinstance(value, int):
+        if not isinstance(value, (int, long)):
             raise ValueError("Value is not a valid type: %s" % type(value))
         if value < self.min_value or self.max_value < value:
             raise ValueError("Value is out of range %d <= %d <= %d" %
@@ -102,45 +102,61 @@ class UnsignedByteField(ByteField):
 
 class BoolField(StructField):
     format_string = b'?'
+    valid_types = bool
+    default = False
 
 
-class ShortField(StructField):
+class ShortField(ByteField):
     format_string = b'h'
+    min_value = -32768
+    max_value = 32767
 
 
-class UnsignedShortField(StructField):
+class UnsignedShortField(ByteField):
     format_string = b'H'
+    min_value = 0
+    max_value = 65535
 
 
-class IntegerField(StructField):
+class IntegerField(ByteField):
     format_string = b'i'
+    min_value = -2147483648
+    max_value = 2147483647
 
 
-class UnsignedIntegerField(StructField):
+class UnsignedIntegerField(ByteField):
     format_string = b'I'
+    min_value = 0
+    max_value = 4294967295
 
 
-class LongField(StructField):
+class LongField(IntegerField):
     format_string = b'l'
 
 
-class UnsignedLongField(StructField):
+class UnsignedLongField(UnsignedIntegerField):
     format_string = b'L'
 
 
-class LongLongField(StructField):
+class LongLongField(ByteField):
     format_string = b'q'
+    min_value = -9223372036854775808
+    max_value = 9223372036854775807
 
 
-class UnsignedLongLongField(StructField):
+class UnsignedLongLongField(ByteField):
     format_string = b'Q'
+    min_value = 0
+    max_value = 18446744073709551615
 
 
 class FloatField(StructField):
     format_string = b'f'
+    default = float(0)
+    valid_types = float
 
 
-class DoubleField(StructField):
+class DoubleField(FloatField):
     format_string = b'd'
 
 
