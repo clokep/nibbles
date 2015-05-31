@@ -66,6 +66,15 @@ class PadField(StructField):
 
 
 class CharField(StructField):
+    def __init__(self, value='\x00', *args, **kwargs):
+        super(StructField, self).__init__(*args, **kwargs)
+
+        if not isinstance(value, (str, bytes)):
+            raise ValueError("Value is not a valid type: %s" % type(value))
+        if len(value) != 1:
+            raise ValueError("CharFields must be a length of 1, got %d" % len(value))
+        self._value = value
+
     format_string = b'c'
 
 

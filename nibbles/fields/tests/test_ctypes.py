@@ -4,7 +4,37 @@ from nibbles.exceptions import NotEnoughDataException
 from nibbles.fields.ctypes import *
 
 
-class TestPString(TestCase):
+class TestCharField(TestCase):
+    def setUp(self):
+        self.f = CharField()
+
+    def test_consume(self):
+        self.f.consume(b'\x01')
+        self.assertEqual(self.f(), b'\x01')
+
+    def test_empty_constructor(self):
+        """The no argument constructor is equivalent to an empty string."""
+        self.assertEqual(self.f(), b'\x00')
+        self.assertEqual(self.f.size(), 1)
+        self.assertEqual(self.f.emit(), b'\x00')
+
+    def test_constructor(self):
+        self.f = CharField(b't')
+        self.assertEqual(self.f(), b't')
+        self.assertEqual(self.f.size(), 1)
+        self.assertEqual(self.f.emit(), b't')
+
+    def test_unicode(self):
+        self.assertRaises(ValueError, CharField, u'1')
+
+    def test_too_short(self):
+        self.assertRaises(ValueError, CharField, b'')
+
+    def test_too_long(self):
+        self.assertRaises(ValueError, CharField, b'12')
+
+
+class TestPStringField(TestCase):
     def setUp(self):
         self.f = PStringField()
 
@@ -46,7 +76,7 @@ class TestPString(TestCase):
         self.assertRaises(ValueError, PStringField, u'test')
 
 
-class TestCString(TestCase):
+class TestCStringField(TestCase):
     def setUp(self):
         self.f = CStringField()
 
