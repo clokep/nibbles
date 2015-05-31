@@ -79,7 +79,19 @@ class CharField(StructField):
 
 
 class ByteField(StructField):
+    def __init__(self, value=0, *args, **kwargs):
+        super(StructField, self).__init__(*args, **kwargs)
+
+        if not isinstance(value, int):
+            raise ValueError("Value is not a valid type: %s" % type(value))
+        if value < self.min_value or self.max_value < value:
+            raise ValueError("Value is out of range %d <= %d <= %d" %
+                             (self.min_value, value, self.max_value))
+        self._value = value
+
     format_string = b'b'
+    min_value = -128
+    max_value = 127
 
 
 class UnsignedByteField(StructField):

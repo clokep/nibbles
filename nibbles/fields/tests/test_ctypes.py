@@ -11,9 +11,11 @@ class TestCharField(TestCase):
     def test_consume(self):
         self.f.consume(b'\x01')
         self.assertEqual(self.f(), b'\x01')
+        self.assertEqual(self.f.size(), 1)
+        self.assertEqual(self.f.emit(), b'\x01')
 
     def test_empty_constructor(self):
-        """The no argument constructor is equivalent to an empty string."""
+        """The no argument constructor is equivalent to a null character."""
         self.assertEqual(self.f(), b'\x00')
         self.assertEqual(self.f.size(), 1)
         self.assertEqual(self.f.emit(), b'\x00')
@@ -32,6 +34,38 @@ class TestCharField(TestCase):
 
     def test_too_long(self):
         self.assertRaises(ValueError, CharField, b'12')
+
+
+class TestByteField(TestCase):
+    def setUp(self):
+        self.f = ByteField()
+
+    def test_consume(self):
+        self.f.consume(b'\x01')
+        self.assertEqual(self.f(), 1)
+        self.assertEqual(self.f.size(), 1)
+        self.assertEqual(self.f.emit(), b'\x01')
+
+    def test_empty_constructor(self):
+        """The no argument constructor is equivalent to 0."""
+        self.assertEqual(self.f(), 0)
+        self.assertEqual(self.f.size(), 1)
+        self.assertEqual(self.f.emit(), b'\x00')
+
+    def test_constructor(self):
+        self.f = ByteField(2)
+        self.assertEqual(self.f(), 2)
+        self.assertEqual(self.f.size(), 1)
+        self.assertEqual(self.f.emit(), b'\x02')
+
+    def test_invalid_type(self):
+        self.assertRaises(ValueError, ByteField, u'1')
+
+    def test_too_small(self):
+        self.assertRaises(ValueError, ByteField, -129)
+
+    def test_too_large(self):
+        self.assertRaises(ValueError, ByteField, 128)
 
 
 class TestPStringField(TestCase):
