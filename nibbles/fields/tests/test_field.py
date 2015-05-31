@@ -80,5 +80,5 @@ class TestComplexField(TestCase):
         c = CompoundCompoundField()
         self.assertIsInstance(c, CompoundCompoundField)
         self.assertIsInstance(c.c, CompoundField)
-        self.assertIs(c.c.a, None)
-        self.assertIs(c.f, None)
+        self.assertIsInstance(c.c.a, Field)
+        self.assertIsInstance(c.f, Field)

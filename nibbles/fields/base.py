@@ -54,41 +54,12 @@ class BaseField(object):
             raise ValueError("Invalid value for endianess: %s" % endian)
         self.endian = endian
 
+        # Now set those values, if in kwargs.
         for fieldname, value in kwargs.items():
-            setattr(self, fieldname, value)
-
-    # The descriptor is set up to allow each instance to have it's own value,
-    # even when belonging to different classes. See the tests near
-    # nibbles.fields.test_field.TestCompoundField.test_separate_fields.
-    _raws = {}
-    def _gen_key(self, instance):
-        """
-        The key is based on both self (i.e. the instance of the descriptor) and
-        instance (i.e. the object that is accessing the descriptor.
-        """
-        return (id(self), id(instance))
-
-    def __get__(self, instance, owner):
-        # If there is no instance, then we must be called from a class obejct.
-        if not instance:
-            return self
-
-        # If there are any sub-fields, pass the real field back.
-        if self.base_fields:
-            return self
-
-        key = self._gen_key(instance)
-        if not self._raws.has_key(key):
-            self.__set__(instance, None)
-
-        return self._raws[key]
-
-    def __set__(self, instance, value):
-        """Sub-classes might want to do validation."""
-        self._raws[self._gen_key(instance)] = value
-
-    def __delete__(self, instance):
-        del self._raws[self._gen_key(instance)]
+           if fieldname in self.base_fields:
+                getattr(self, fieldname).set_value(value)
+           else:
+               raise TypeError
 
     # The number of bytes represented by this field, -1 denotes a variable
     # length.
@@ -97,8 +68,7 @@ class BaseField(object):
         # Combine the length of any children.
         for fieldname, field in self.base_fields.items():
             # Get the value and then ask the field the size.
-            val = getattr(self, fieldname)
-            sz += field.size(val)
+            sz += getattr(self, fieldname).size()
 
         return sz
 
@@ -112,16 +82,11 @@ class BaseField(object):
 
         # Ask each field to consume bytes and add it as a property (in order).
         for fieldname, field in self.base_fields.items():
-            # Don't get *this* instances field, since it will lie and return the
-            # underlying Python value. Use the shared instance that is in
-            # base_fields directly.
-            raw = field.consume(data)
-            # Call the descriptor's __set__.
-            setattr(self, fieldname, raw)
+            raw = getattr(self, fieldname).consume(data)
 
         return self
 
-    def emit(self, value=None):
+    def emit(self):
         """
         Returns the serialization of this data to a string. This is a little
         odd, that you have to pass the value into itself.
@@ -129,17 +94,29 @@ class BaseField(object):
         TODO Optionally accept a filelike to write to.
         """
 
-        if value is None:
-            value = self
-
         # Ask each field to consume bytes and add it as a property (in order).
         res = b''
         for fieldname, field in self.base_fields.items():
             # Get the value and then ask the field to emit it.
-            val = getattr(self, fieldname)
-            res += field.emit(val)
+            res += getattr(self, fieldname).emit()
 
         return res
+
+    # Each field needs a Python value to return, etc. This could be a tuple, or
+    # something more complex.
+    _value = None
+
+    def set_value(self, value):
+        """Store a Python value for this field."""
+        self._value = value
+
+    def get_value(self):
+        """Return a Python value for this field."""
+        return self._value
+
+    def __call__(self):
+        """Shorthand for get_value."""
+        return self.get_value()
 
 
 class MetaField(type):

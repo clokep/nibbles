@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from copy import deepcopy
 
+
 class BaseField(object):
     """
     The actual implementation of a Field should go here, Field simply exists
@@ -26,23 +27,15 @@ class BaseField(object):
         self.creation_counter = Field.creation_counter
         BaseField.creation_counter += 1
 
-        # Add the fields to this instance of the class, deepcopy to allow
-        # modification of instances.
-        #for fieldname, field in self.base_fields.items():
-        #    setattr(self, fieldname, deepcopy(field))
+        #for fieldname, value in kwargs.items():
+        #    setattr(self, fieldname, value)
 
-    # The raw Python object value for this field. Individual subclasses should
-    # set this value.
-    _raw = None
+        #for fieldname, value in self.base_fields.items():
+        #    self.__dict__[fieldname] = deepcopy(value)
+
     def __get__(self, instance, owner):
-        if not instance:
-            raise AttributeError()
-
-        return instance._raw
-    def __set__(self, instance, value):
-        """Sub-classes might want to do validation."""
-        instance._raw = value
-
+        print(self, instance, owner)
+        return "FOO"
 
 class MetaField(type):
     """
@@ -52,10 +45,9 @@ class MetaField(type):
     def __new__(mcs, name, bases, attrs):
         # Collect fields from current class.
         current_fields = []
-        for key, value in list(attrs.items()):
+        for key, value in attrs.items():
             if isinstance(value, BaseField):
                 current_fields.append((key, value))
-                #attrs.pop(key)
         current_fields.sort(key=lambda x: x[1].creation_counter)
         attrs['declared_fields'] = OrderedDict(current_fields)
 
@@ -77,11 +69,6 @@ class MetaField(type):
         new_class.base_fields = declared_fields
         new_class.declared_fields = declared_fields
 
-        # Add all attributes to the class.
-        # for obj_name, obj in attrs.items():
-        #     print("Setting %s" % obj_name)
-        #     setattr(new_class, obj_name, obj)
-
         return new_class
 
 
@@ -89,27 +76,20 @@ class Field(BaseField):
     __metaclass__ = MetaField
 
 
-class F(Field):
+
+class A(Field):
     a = Field()
     b = Field()
 
 
-class G(F):
-    c = Field()
-
-print("Test class")
-#print(F.a)
-#print(F.b)
-
-print("Test instance")
-f = F()
-print(f.a)
-print(f.b)
-
-f2 = F()
-print(f.a is f2.a)
-print(f.base_fields)
+class B(Field):
+    a = Field()
+    b = Field()
 
 
-g = G()
-print(g.base_fields)
+a1 = A()
+a2 = A()
+
+
+print(a1.a)
+print(a2.a)
