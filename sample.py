@@ -5,7 +5,7 @@ EXPECTED = '\x01abcdf\x00'
 
 class Struct(fields.Field):
     code = fields.ByteField()
-    description = fields.CString()
+    description = fields.CStringField()
 
 s = Struct(code=1, description='abcdf', endian=LITTLE_ENDIAN)
 assert s.emit() == EXPECTED

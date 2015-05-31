@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 from unittest import TestCase
 
-from ..base import Field
+from nibbles.fields.base import Field
 
 
 class CompoundField(Field):
