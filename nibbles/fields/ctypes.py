@@ -94,8 +94,10 @@ class ByteField(StructField):
     max_value = 127
 
 
-class UnsignedByteField(StructField):
+class UnsignedByteField(ByteField):
     format_string = b'B'
+    min_value = 0
+    max_value = 256
 
 
 class BoolField(StructField):

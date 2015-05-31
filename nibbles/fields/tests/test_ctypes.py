@@ -37,8 +37,10 @@ class TestCharField(TestCase):
 
 
 class TestByteField(TestCase):
+    FIELD = ByteField
+
     def setUp(self):
-        self.f = ByteField()
+        self.f = self.FIELD()
 
     def test_consume(self):
         self.f.consume(b'\x01')
@@ -53,19 +55,23 @@ class TestByteField(TestCase):
         self.assertEqual(self.f.emit(), b'\x00')
 
     def test_constructor(self):
-        self.f = ByteField(2)
+        self.f = self.FIELD(2)
         self.assertEqual(self.f(), 2)
         self.assertEqual(self.f.size(), 1)
         self.assertEqual(self.f.emit(), b'\x02')
 
     def test_invalid_type(self):
-        self.assertRaises(ValueError, ByteField, u'1')
+        self.assertRaises(ValueError, self.FIELD, u'1')
 
     def test_too_small(self):
-        self.assertRaises(ValueError, ByteField, -129)
+        self.assertRaises(ValueError, self.FIELD, self.FIELD.min_value - 1)
 
     def test_too_large(self):
-        self.assertRaises(ValueError, ByteField, 128)
+        self.assertRaises(ValueError, self.FIELD, self.FIELD.max_value + 1)
+
+
+class TestUnsignedByteField(TestByteField):
+    FIELD = UnsignedByteField
 
 
 class TestPStringField(TestCase):
