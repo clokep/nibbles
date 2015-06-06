@@ -17,17 +17,17 @@ class StructField(Field):
     def __init__(self, value=None, length=1, *args, **kwargs):
         super(StructField, self).__init__(*args, **kwargs)
 
+        self.length = length
         if value is None:
             value = self.default
         else:
-            self.length = length
             if length != len(value):
-                raise TypeError("Expected %d items, got %d." % (length, len(value)))
+                raise ValueError("Expected %d items, got %d." % (length, len(value)))
 
         self.format_string = b'%d%s' % (length, self._format_string)
 
         if not isinstance(value, self.valid_types):
-            raise ValueError("Value is not a valid type: %s" % type(value))
+            raise TypeError("Value is not a valid type: %s" % type(value))
         self.value = value
 
     # The formatting to use for struct unpack/pack, only used if fixed_width is
@@ -64,20 +64,27 @@ class StructField(Field):
 
     def emit(self):
         format_string = self.endian + self.format_string
-        return struct.pack(format_string, self.value)
+
+        value = self.value
+        if not isinstance(value, (tuple, list)):
+            value = (value, )
+
+        return struct.pack(format_string, *value)
+
+    def __call__(self):
+        if self.length == 1 and isinstance(self.value, tuple):
+            return self.value[0]
+        return self.value
 
 
 class PadField(StructField):
     _format_string = b'x'
     # TODO
 
+
 class CharField(StructField):
-    def __init__(self, value='\x00', *args, **kwargs):
-        super(CharField, self).__init__(*args, **kwargs)
-
-        self.value = value
-
     _format_string = b'c'
+    default = '\x00'
     valid_types = (str, bytes)
 
 
@@ -181,7 +188,7 @@ class CStringField(Field):
         super(CStringField, self).__init__(*args, **kwargs)
 
         if not isinstance(value, (str, bytes)):
-            raise ValueError("Value is not a string type: %s" % type(value))
+            raise TypeError("Value is not a string type: %s" % type(value))
         self.value = value
 
     def size(self):

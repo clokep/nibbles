@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from copy import deepcopy
 
 try:
     from cStringIO import StringIO
@@ -54,9 +55,19 @@ class BaseField(object):
             raise ValueError("Invalid value for endianess: %s" % endian)
         self.endian = endian
 
+        # For each field:
+        #   1. Make a copy so instances of Field don't touch each other.
+        #   2. Ensure it can find it's parent.
+        self.fields = OrderedDict()
+        for fieldname, field in self.base_fields.items():
+            field = deepcopy(field)
+            field.parent = self
+            self.fields[fieldname] = field
+            setattr(self, fieldname, field)
+
         # Now set those values, if in kwargs.
         for fieldname, value in kwargs.items():
-            if fieldname in self.base_fields:
+            if fieldname in self.fields:
                 getattr(self, fieldname).value = value
             else:
                 raise TypeError("Unknown field: %s" % fieldname)
@@ -66,7 +77,7 @@ class BaseField(object):
     def size(self, value=None):
         sz = 0
         # Combine the length of any children.
-        for fieldname, field in self.base_fields.items():
+        for fieldname, field in self.fields.items():
             # Get the value and then ask the field the size.
             sz += getattr(self, fieldname).size()
 
@@ -81,7 +92,7 @@ class BaseField(object):
         data = _filelike(data)
 
         # Ask each field to consume bytes and add it as a property (in order).
-        for fieldname, field in self.base_fields.items():
+        for fieldname, field in self.fields.items():
             raw = getattr(self, fieldname).consume(data)
 
         return self
@@ -96,7 +107,7 @@ class BaseField(object):
 
         # Ask each field to consume bytes and add it as a property (in order).
         res = b''
-        for fieldname, field in self.base_fields.items():
+        for fieldname, field in self.fields.items():
             # Get the value and then ask the field to emit it.
             res += getattr(self, fieldname).emit()
 
@@ -122,9 +133,9 @@ class BaseField(object):
 
     def __str__(self, prefix=""):
         s = ""
-        for fieldname in self.base_fields.keys():
+        for fieldname in self.fields.keys():
             field = getattr(self, fieldname)
-            if field.base_fields:
+            if field.fields:
                 s += "%s%s =\n%s\n" % (prefix, fieldname, field.__str__(prefix + "\t"))
             else:
                 s += "%s%s = '%s'\n" % (prefix, fieldname, field())
@@ -160,6 +171,7 @@ class MetaField(type):
                 if value is None and attr in declared_fields:
                     declared_fields.pop(attr)
 
+        # Store these fields on the class.
         new_class.base_fields = declared_fields
         new_class.declared_fields = declared_fields
 

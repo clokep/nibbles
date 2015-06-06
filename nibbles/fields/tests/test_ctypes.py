@@ -27,7 +27,7 @@ class TestCharField(TestCase):
         self.assertEqual(self.f.emit(), b't')
 
     def test_unicode(self):
-        self.assertRaises(ValueError, CharField, u'1')
+        self.assertRaises(TypeError, CharField, u'1')
 
     def test_too_short(self):
         self.assertRaises(ValueError, CharField, b'')
@@ -61,7 +61,7 @@ class TestByteField(TestCase):
         self.assertEqual(self.f.emit(), b'\x02')
 
     def test_invalid_type(self):
-        self.assertRaises(ValueError, self.FIELD, u'1')
+        self.assertRaises(TypeError, self.FIELD, u'1')
 
     def test_too_small(self):
         self.assertRaises(ValueError, self.FIELD, self.FIELD.min_value - 1)
@@ -113,7 +113,7 @@ class TestPStringField(TestCase):
         self.assertEqual(self.f.emit(), b'\x04test')
 
     def test_unicode(self):
-        self.assertRaises(ValueError, PStringField, u'test')
+        self.assertRaises(TypeError, PStringField, u'test')
 
 
 class TestCStringField(TestCase):
@@ -155,4 +155,4 @@ class TestCStringField(TestCase):
         self.assertEqual(self.f.emit(), b'test\x00')
 
     def test_unicode(self):
-        self.assertRaises(ValueError, CStringField, u'test')
+        self.assertRaises(TypeError, CStringField, u'test')

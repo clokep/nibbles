@@ -39,20 +39,20 @@ class SubField(Field):
 class TestOrdering(TestCase):
     def test_ordered_fields(self):
         f = Ordered()
-        self.assertEqual(['a', 'b', 'c', 'd'], f.declared_fields.keys())
+        self.assertEqual(['a', 'b', 'c', 'd'], f.base_fields.keys())
 
     def test_reversed_fields(self):
         f = Reversed()
-        self.assertEqual(['d', 'c', 'b', 'a'], f.declared_fields.keys())
+        self.assertEqual(['d', 'c', 'b', 'a'], f.base_fields.keys())
 
     def test_random_fields(self):
         f = Random()
-        self.assertEqual(['c', 'a', 'b', 'd'], f.declared_fields.keys())
+        self.assertEqual(['c', 'a', 'b', 'd'], f.base_fields.keys())
 
     def test_subclass_fields(self):
         f = SubClass()
-        self.assertEqual(['a', 'b', 'c', 'd', 'x', 'y'], f.declared_fields.keys())
+        self.assertEqual(['a', 'b', 'c', 'd', 'x', 'y'], f.base_fields.keys())
 
     def test_subfield_fields(self):
         f = SubField()
-        self.assertEqual(['q', 'r'], f.declared_fields.keys())
+        self.assertEqual(['q', 'r'], f.base_fields.keys())
