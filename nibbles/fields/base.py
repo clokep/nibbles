@@ -21,7 +21,6 @@ NETWORK_ENDIAN = "!"
 
 ENDIANS = (NATIVE_ENDIAN, BIG_ENDIAN, LITTLE_ENDIAN, NETWORK_ENDIAN,)
 
-
 class BaseField(object):
     """
     The actual implementation of a Field should go here, Field simply exists
@@ -45,9 +44,9 @@ class BaseField(object):
     # The endianess of this data.
     endian = NETWORK_ENDIAN
 
-    def __init__(self, endian=NETWORK_ENDIAN, *args, **kwargs):
+    def __init__(self, endian=LITTLE_ENDIAN, *args, **kwargs):
         # Increase the creation counter, and save our local copy.
-        self.creation_counter = Field.creation_counter
+        self.creation_counter = BaseField.creation_counter
         BaseField.creation_counter += 1
 
         # Ensure the class knows what Endianess to care about.
@@ -61,7 +60,10 @@ class BaseField(object):
         self.fields = OrderedDict()
         for fieldname, field in self.base_fields.items():
             field = deepcopy(field)
+
+            # Let the field know who it belongs to.
             field.parent = self
+
             self.fields[fieldname] = field
             setattr(self, fieldname, field)
 
@@ -71,6 +73,9 @@ class BaseField(object):
                 getattr(self, fieldname).value = value
             else:
                 raise TypeError("Unknown field: %s" % fieldname)
+
+        # For now, the parent is unknown.
+        self.parent = None
 
     # The number of bytes represented by this field, -1 denotes a variable
     # length.
