@@ -57,9 +57,9 @@ class BaseField(object):
         # Now set those values, if in kwargs.
         for fieldname, value in kwargs.items():
             if fieldname in self.base_fields:
-                getattr(self, fieldname).set_value(value)
+                getattr(self, fieldname).value = value
             else:
-                raise TypeError
+                raise TypeError("Unknown field: %s" % fieldname)
 
     # The number of bytes represented by this field, -1 denotes a variable
     # length.
@@ -106,17 +106,29 @@ class BaseField(object):
     # something more complex.
     _value = None
 
-    def set_value(self, value):
-        """Store a Python value for this field."""
-        self._value = value
-
-    def get_value(self):
+    @property
+    def value(self):
         """Return a Python value for this field."""
         return self._value
 
+    @value.setter
+    def value(self, value):
+        """Store a Python value for this field."""
+        self._value = value
+
     def __call__(self):
         """Shorthand for get_value."""
-        return self.get_value()
+        return self.value
+
+    def __str__(self, prefix=""):
+        s = ""
+        for fieldname in self.base_fields.keys():
+            field = getattr(self, fieldname)
+            if field.base_fields:
+                s += "%s%s =\n%s\n" % (prefix, fieldname, field.__str__(prefix + "\t"))
+            else:
+                s += "%s%s = '%s'\n" % (prefix, fieldname, field())
+        return s
 
 
 class MetaField(type):

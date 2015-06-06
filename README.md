@@ -52,6 +52,8 @@ Supported Features
 ------------------
 
 * Variable length strings
+* Multi-stage processing (i.e. a zlib compressed field that once decompressed is broken into further fields)
+* Twisted protocol support
 
 Similar Stuff
 -------------
@@ -77,3 +79,6 @@ TODO
 ====
 
 * Setup Sphinx...
+* Created a Twisted protocol which can parse incoming packets
+* File parser / context
+* Deal with Endianess more completely
