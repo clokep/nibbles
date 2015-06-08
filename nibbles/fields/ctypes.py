@@ -24,9 +24,22 @@ class StructField(Field):
         # If a value was given, use the default.
         if value is None:
             value = self.default
+        self.value = value
+
+    def _check_value(self, value):
+        """Ensure the new value is of the proper type."""
         if not isinstance(value, self.valid_types):
             raise TypeError("Value is not a valid type: %s" % type(value))
-        self.value = value
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, value):
+        """Store a Python value for this field."""
+        self._check_value(value)
+        self._value = value
 
     # The formatting to use for struct unpack/pack, only used if fixed_width is
     # True.
@@ -75,19 +88,24 @@ class PadField(StructField):
 
 
 class CharField(StructField):
+    def _check_value(self, value):
+        super(CharField, self)._check_value(value)
+
+        if len(value) != 1:
+            raise ValueError("Attempting to set a %d length string to a character field, character fieldss must be exactly 1 character in length." % len(value))
+
     _format_string = b'c'
-    default = '\x00'
+    default = b'\x00'
     valid_types = (str, bytes)
 
 
 class ByteField(StructField):
-    def __init__(self, value=0, *args, **kwargs):
-        super(ByteField, self).__init__(*args, **kwargs)
+    def _check_value(self, value):
+        super(ByteField, self)._check_value(value)
 
         if value < self.min_value or self.max_value < value:
             raise ValueError("Value is out of range %d <= %d <= %d" %
                              (self.min_value, value, self.max_value))
-        self.value = value
 
     _format_string = b'b'
     valid_types = (int, long)
@@ -176,6 +194,12 @@ class StringField(StructField):
 
 class VoidField(StructField):
     _format_string = b'P'
+
+
+class RepeatStructFieldMixin(object):
+    """A mixin to have a field be repeated multiple times."""
+
+    # ff
 
 
 class CStringField(Field):
