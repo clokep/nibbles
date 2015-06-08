@@ -4,8 +4,8 @@ from .base import _filelike, Field
 
 
 class RepeatedField(Field):
-    def __init__(self, repeated, *args, **kwargs):
-        super(RepeatedField, self).__init__(*args, **kwargs)
+    def __init__(self, repeated, args=(), kwargs={}, *_args, **_kwargs):
+        super(RepeatedField, self).__init__(*_args, **_kwargs)
 
         # The field to repeat.
         self.repeated = repeated

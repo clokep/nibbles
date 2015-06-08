@@ -13,13 +13,15 @@ def _filelike(f):
         return StringIO(f)
     return f
 
-
 NATIVE_ENDIAN = "="
 BIG_ENDIAN = ">"
 LITTLE_ENDIAN = "<"
 NETWORK_ENDIAN = "!"
 
 ENDIANS = (NATIVE_ENDIAN, BIG_ENDIAN, LITTLE_ENDIAN, NETWORK_ENDIAN,)
+
+DEFAULT_ENDIAN = NETWORK_ENDIAN
+
 
 class BaseField(object):
     """
@@ -41,17 +43,19 @@ class BaseField(object):
     # Tracks each time a Field instance is created. Used to retain order.
     creation_counter = 0
 
-    # The endianess of this data.
-    endian = NETWORK_ENDIAN
+    def __init__(self, endian=None, *args, **kwargs):
+        """
+        Instantiate a new instance of a Field.
 
-    def __init__(self, endian=LITTLE_ENDIAN, *args, **kwargs):
+        Set ``endian`` to change the Endianess of the data, by default this is
+        inherited from parents.
+        """
+
         # Increase the creation counter, and save our local copy.
         self.creation_counter = BaseField.creation_counter
         BaseField.creation_counter += 1
 
         # Ensure the class knows what Endianess to care about.
-        if endian not in ENDIANS:
-            raise ValueError("Invalid value for endianess: %s" % endian)
         self.endian = endian
 
         # For each field:
@@ -118,8 +122,27 @@ class BaseField(object):
 
         return res
 
-    # Each field needs a Python value to return, etc. This could be a tuple, or
-    # something more complex.
+    # The Endianess of the data, by default this inherits from the parent.
+    _endian = None
+
+    @property
+    def endian(self):
+        if self._endian is None:
+            if self.parent is None:
+                return DEFAULT_ENDIAN
+            return self.parent.endian
+
+        return self._endian
+
+    @endian.setter
+    def endian(self, endian):
+        if endian is not None and endian not in ENDIANS:
+            raise ValueError("Invalid value for endianess: %s" % endian)
+
+        self._endian = endian
+
+    # Each field needs a Python value to return, etc. This could be simple
+    # value, a tuple, or something more complex.
     _value = None
 
     @property

@@ -1,3 +1,4 @@
+import os
 import struct
 
 from nibbles.exceptions import NotEnoughDataException
@@ -14,18 +15,15 @@ class StructField(Field):
         valid_types
     """
 
-    def __init__(self, value=None, length=1, *args, **kwargs):
+    def __init__(self, value=None, *args, **kwargs):
         super(StructField, self).__init__(*args, **kwargs)
 
-        self.length = length
+        # Build the format string.
+        self.format_string = b'%s' % self._format_string
+
+        # If a value was given, use the default.
         if value is None:
             value = self.default
-        else:
-            if length != len(value):
-                raise ValueError("Expected %d items, got %d." % (length, len(value)))
-
-        self.format_string = b'%d%s' % (length, self._format_string)
-
         if not isinstance(value, self.valid_types):
             raise TypeError("Value is not a valid type: %s" % type(value))
         self.value = value
@@ -60,20 +58,14 @@ class StructField(Field):
         num_bytes = self.size()
 
         # Unpack the data.
-        self.value = struct.unpack(format_string, f.read(num_bytes))
+        self.value = struct.unpack(format_string, f.read(num_bytes))[0]
 
     def emit(self):
         format_string = self.endian + self.format_string
 
-        value = self.value
-        if not isinstance(value, (tuple, list)):
-            value = (value, )
-
-        return struct.pack(format_string, *value)
+        return struct.pack(format_string, self.value)
 
     def __call__(self):
-        if self.length == 1 and isinstance(self.value, tuple):
-            return self.value[0]
         return self.value
 
 
@@ -176,7 +168,10 @@ class StringField(StructField):
     valid_types = (str, bytes)
 
     def __init__(self, length=0, *args, **kwargs):
-        super(StringField, self).__init__(length=length, *args, **kwargs)
+        super(StringField, self).__init__(*args, **kwargs)
+
+        # Allow strings to be multiple characters.
+        self.format_string = b'%d%s' % (length, self._format_string)
 
 
 class VoidField(StructField):
