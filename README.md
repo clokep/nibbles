@@ -1,6 +1,9 @@
 Declarative Data Parsing
 ========================
 
+Warning: This is pre-alpha software. Much of it doesn't work, elements might
+change at any time.
+
 Django-esque object models for structured data.
 
 Goal of having something like this:
